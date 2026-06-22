@@ -49,11 +49,6 @@ WELCOME_MESSAGE = """
 أنا هنا لتسهيل عملك ومساعدتك في الوصول إلى المعلومات بسرعة ودقة.
 
 **كيف يمكنني مساعدتك اليوم؟**
-* **اسألني** عن أي معلومات في قاعدة بياناتنا.
-* **ارفع مستنداً** (PDF, Word, TXT) وسأقوم بقراءته وتلخيصه أو الإجابة على أسئلة محددة منه.
-* **ارفع صورة** وسأقوم باستخراج النصوص منها وتحليلها.
-
-تفضل بكتابة سؤالك بالأسفل، أو استخدم القائمة الجانبية لرفع الملفات.
 """
 
 if "messages" not in st.session_state:
@@ -62,7 +57,6 @@ if "messages" not in st.session_state:
 # Sidebar
 with st.sidebar:
     # Company logo
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Telecom_Egypt_logo.svg/512px-Telecom_Egypt_logo.svg.png", width=150)
     st.divider()
     
     st.header("إدارة الملفات")
