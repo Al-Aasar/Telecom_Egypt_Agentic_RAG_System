@@ -45,7 +45,7 @@ if "session_id" not in st.session_state:
 WELCOME_MESSAGE = """
 **مرحباً بك!**
 
-أنا المساعد الذكي الخاص بـ **الشركة المصرية للاتصالات (Telecom Egypt)**. 
+أنا المساعد الذكي الخاص بـ **الشركة المصرية للاتصالات (Telecom Egypt)**./n 
 أنا هنا لتسهيل عملك ومساعدتك في الوصول إلى المعلومات بسرعة ودقة.
 
 **كيف يمكنني مساعدتك اليوم؟**
@@ -56,7 +56,6 @@ if "messages" not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    # Company logo
     st.divider()
     
     st.header("إدارة الملفات")
