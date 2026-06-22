@@ -35,7 +35,6 @@ st.markdown("""
 
 # Main UI Title
 st.markdown("<h1 class='main-title'>المساعد الذكي - Telecom Egypt</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-title'>نظام الذكاء الاصطناعي لتحليل المستندات والصور والإجابة على الاستفسارات</p>", unsafe_allow_html=True)
 
 # Session and Welcome Message Initialization
 if "session_id" not in st.session_state:
