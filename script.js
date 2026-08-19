@@ -43,6 +43,24 @@ const form = el("composerForm");
 const input = el("messageInput");
 const sendBtn = el("sendBtn");
 const sessionsList = el("sessionsList");
+const sidebar = el("sidebar");
+const menuToggle = el("menuToggle");
+const sidebarOverlay = el("sidebarOverlay");
+
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("visible");
+  menuToggle.setAttribute("aria-expanded", "true");
+}
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("visible");
+  menuToggle.setAttribute("aria-expanded", "false");
+}
+menuToggle.addEventListener("click", () => {
+  sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+});
+sidebarOverlay.addEventListener("click", closeSidebar);
 
 function applyLang() {
   const s = STRINGS[lang];
@@ -313,7 +331,10 @@ function clearChatView() {
   highlightActiveSession();
 }
 
-el("newChatBtn").addEventListener("click", clearChatView);
+el("newChatBtn").addEventListener("click", () => {
+  clearChatView();
+  closeSidebar();
+});
 
 async function deleteSession(id, itemEl) {
   if (!confirm(STRINGS[lang].deleteConfirm)) return;
@@ -371,6 +392,7 @@ function highlightActiveSession() {
 async function loadSession(id) {
   currentSessionId = id;
   localStorage.setItem("te_rag_session_id", id);
+  closeSidebar();
   const res = await fetch(`${API_BASE_URL}/api/sessions/${id}/messages`);
   const msgs = await res.json();
 
