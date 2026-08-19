@@ -34,7 +34,7 @@ te.eg  ──scrape──▶  crawled_pages   ──chunk──▶  Chunked_Data
 | `scrape_te_eg.py` | Crawls the te.eg website (respecting `robots.txt`) and saves the pages into the `crawled_pages` table |
 | `chunking_data.py` | Splits the scraped text into chunks (`RecursiveCharacterTextSplitter`) and saves them into `Chunked_Data` |
 | `embed_data.py` | Converts the chunks into embeddings using the `BAAI/bge-m3` model and saves them into `document_vectors` (pgvector) |
-| `rag_chat/` | Retrieval + generation + UI layer (details in [`rag_chat/README.md`](rag_chat/README.md)) |
+| `app.py`, `db.py`, `hybrid_retrieval.py`, `llm_groq.py`, `chat_memory.py`, `static/` | Retrieval + generation + UI layer |
 
 ## Key Features
 
@@ -61,7 +61,6 @@ python chunking_data.py
 python embed_data.py
 
 # 2) The chat layer
-cd rag_chat
 python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
@@ -73,8 +72,6 @@ uvicorn app:app --reload --port 8000
 
 Then open `http://localhost:8000`.
 
-More details about the chat layer (architecture, env variables, guardrails) are in [`rag_chat/README.md`](rag_chat/README.md).
-
 ## Project Structure
 
 ```
@@ -82,19 +79,18 @@ More details about the chat layer (architecture, env variables, guardrails) are 
 ├── scrape_te_eg.py
 ├── chunking_data.py
 ├── embed_data.py
-└── rag_chat/
-    ├── app.py                 # FastAPI: /api/chat, /api/sessions, DELETE session
-    ├── db.py                  # schema: sparse index + checkpointing tables
-    ├── hybrid_retrieval.py    # dense + sparse search + RRF fusion
-    ├── llm_groq.py            # Groq LLM call + system prompt / guardrails
-    ├── chat_memory.py         # session/message persistence
-    ├── requirements.txt
-    ├── .env.example
-    ├── README.md
-    └── static/
-        ├── index.html
-        ├── style.css
-        └── script.js
+├── app.py                 # FastAPI: /api/chat, /api/sessions, DELETE session
+├── db.py                  # schema: sparse index + checkpointing tables
+├── hybrid_retrieval.py    # dense + sparse search + RRF fusion
+├── llm_groq.py            # Groq LLM call + system prompt / guardrails
+├── chat_memory.py         # session/message persistence
+├── requirements.txt
+├── .env.example
+├── README.md
+└── static/
+    ├── index.html
+    ├── style.css
+    └── script.js
 ```
 
 ## Notes
