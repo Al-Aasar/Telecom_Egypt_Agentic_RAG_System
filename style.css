@@ -285,6 +285,52 @@ body {
 .msg.assistant a { color: var(--purple); text-decoration: underline; }
 .msg.assistant a:hover { color: var(--orange); }
 
+/* headings inside rendered markdown */
+.msg.assistant h1, .msg.assistant h2, .msg.assistant h3,
+.msg.assistant h4, .msg.assistant h5, .msg.assistant h6 {
+  margin: 14px 0 8px;
+  font-weight: 900;
+  color: var(--text);
+}
+.msg.assistant h1:first-child, .msg.assistant h2:first-child,
+.msg.assistant h3:first-child { margin-top: 0; }
+.msg.assistant h1 { font-size: 1.25em; }
+.msg.assistant h2 { font-size: 1.15em; }
+.msg.assistant h3 { font-size: 1.05em; color: var(--orange); }
+.msg.assistant h4, .msg.assistant h5, .msg.assistant h6 { font-size: 1em; color: var(--purple); }
+
+/* tables inside rendered markdown */
+.msg.assistant .table-wrap {
+  overflow-x: auto;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.msg.assistant table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  /* Numbers and mixed digit/currency content read naturally left-to-right
+     even inside an RTL page — this keeps column order and digit order from
+     flipping, which is what made the raw pipes/numbers look scrambled
+     before headings/tables were parsed at all. */
+  direction: ltr;
+  text-align: right;
+}
+.msg.assistant th, .msg.assistant td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.msg.assistant th {
+  background: var(--surface);
+  color: var(--orange);
+  font-weight: 700;
+  text-align: right;
+}
+.msg.assistant tr:last-child td { border-bottom: none; }
+.msg.assistant tbody tr:hover { background: rgba(255,255,255,0.03); }
+
 .sources {
   align-self: flex-end;
   max-width: 72%;
