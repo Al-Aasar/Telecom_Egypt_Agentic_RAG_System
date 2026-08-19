@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مساعد TE.eg الذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="brand-text">
+        <strong>مساعد TE</strong>
+      </div>
+    </div>
+
+    <button class="new-chat-btn" id="newChatBtn">
+      <span>+ محادثة جديدة</span>
+    </button>
+
+    <div class="sessions-label">المحادثات المحفوظة</div>
+    <div class="sessions-list" id="sessionsList">
+      <!-- session items injected here -->
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="lang-toggle" id="langToggle" title="Switch language / تبديل اللغة">EN / عربي</button>
+    </div>
+  </aside>
+
+  <main class="chat-pane">
+
+    <header class="chat-header">
+      <div class="signal-bars" aria-hidden="true">
+        <i></i><i></i><i></i><i></i>
+      </div>
+      <div class="header-text">
+        <h1 id="headerTitle">اسأل عن خدمات TE</h1>
+      </div>
+    </header>
+
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-mark">TE</div>
+        <h2 id="emptyTitle">ابدأ بسؤال</h2>
+        <p id="emptySub">مثال: "ما هي باقات الإنترنت المنزلي المتاحة؟"</p>
+      </div>
+    </div>
+
+    <form class="composer" id="composerForm">
+      <textarea id="messageInput" rows="1" placeholder="اكتب سؤالك هنا..." autocomplete="off"></textarea>
+      <button type="submit" id="sendBtn" aria-label="إرسال">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 12l16-8-6 8 6 8-16-8z" fill="currentColor"/></svg>
+      </button>
+    </form>
+
+  </main>
+
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
