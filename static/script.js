@@ -27,6 +27,12 @@ const STRINGS = {
   },
 };
 
+// Backend base URL. The frontend (GitHub Pages) and backend (Hugging Face
+// Space) are on different origins, so every fetch below must hit the full
+// URL, not a relative path like "/api/chat" — a relative path would
+// resolve against the GitHub Pages origin and 404.
+const API_BASE_URL = "https://al-aasar-telecom-egypt-agentic-rag-system.hf.space";
+
 let lang = "ar";
 let currentSessionId = null;
 
@@ -40,13 +46,27 @@ const sessionsList = el("sessionsList");
 
 function applyLang() {
   const s = STRINGS[lang];
-  el("headerTitle").textContent = s.headerTitle;
-  el("headerSub").textContent = s.headerSub;
-  el("emptyTitle").textContent = s.emptyTitle;
-  el("emptySub").textContent = s.emptySub;
+  // setText is defensive: a missing element (e.g. HTML/JS drifting out
+  // of sync) logs a warning instead of throwing and killing the rest of
+  // this function plus everything queued after it in the init block
+  // (refreshSessions(), loadSession()).
+  const setText = (id, val) => {
+    const node = el(id);
+    if (node) {
+      node.textContent = val;
+    } else {
+      console.warn(`applyLang: missing element #${id}`);
+    }
+  };
+
+  setText("headerTitle", s.headerTitle);
+  setText("headerSub", s.headerSub);
+  setText("emptyTitle", s.emptyTitle);
+  setText("emptySub", s.emptySub);
   input.placeholder = s.placeholder;
-  el("newChatBtn").querySelector("span").textContent = s.newChat;
-  el("sessionsLabel").textContent = s.sessionsLabel;
+  const newChatSpan = el("newChatBtn")?.querySelector("span");
+  if (newChatSpan) newChatSpan.textContent = s.newChat;
+  setText("sessionsLabel", s.sessionsLabel);
   document.body.classList.toggle("ltr", lang === "en");
   document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
   document.documentElement.lang = lang;
@@ -147,7 +167,7 @@ async function sendMessage(text) {
 
   sendBtn.disabled = true;
   try {
-    const res = await fetch("/api/chat", {
+    const res = await fetch(`${API_BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text, session_id: currentSessionId }),
@@ -205,7 +225,7 @@ el("newChatBtn").addEventListener("click", clearChatView);
 async function deleteSession(id, itemEl) {
   if (!confirm(STRINGS[lang].deleteConfirm)) return;
   try {
-    const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("delete failed");
     itemEl.remove();
     if (id === currentSessionId) clearChatView();
@@ -216,7 +236,7 @@ async function deleteSession(id, itemEl) {
 
 async function refreshSessions() {
   try {
-    const res = await fetch("/api/sessions");
+    const res = await fetch(`${API_BASE_URL}/api/sessions`);
     const sessions = await res.json();
     sessionsList.innerHTML = "";
     sessions.forEach((s) => {
@@ -258,7 +278,7 @@ function highlightActiveSession() {
 async function loadSession(id) {
   currentSessionId = id;
   localStorage.setItem("te_rag_session_id", id);
-  const res = await fetch(`/api/sessions/${id}/messages`);
+  const res = await fetch(`${API_BASE_URL}/api/sessions/${id}/messages`);
   const msgs = await res.json();
 
   messagesEl.innerHTML = "";
@@ -276,8 +296,12 @@ async function loadSession(id) {
   highlightActiveSession();
 }
 
-// --- init ---
-applyLang();
-refreshSessions();
-const savedId = localStorage.getItem("te_rag_session_id");
-if (savedId) loadSession(savedId);
+
+try { applyLang(); } catch (err) { console.error("applyLang failed:", err); }
+try { refreshSessions(); } catch (err) { console.error("refreshSessions failed:", err); }
+try {
+  const savedId = localStorage.getItem("te_rag_session_id");
+  if (savedId) loadSession(savedId);
+} catch (err) {
+  console.error("loadSession failed:", err);
+}
