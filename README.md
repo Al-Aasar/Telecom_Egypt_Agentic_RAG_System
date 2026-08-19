@@ -1,8 +1,8 @@
 # WE (Telecom Egypt) RAG Chat System
 
-مساعد ذكي مبني على **RAG (Retrieval-Augmented Generation)** بيجاوب على أسئلة العملاء بالاعتماد **حصريًا** على محتوى موقع [te.eg](https://te.eg) الرسمي — من غير هلوسة، ومن غير خروج عن نطاق خدمات الشركة.
+An intelligent assistant built on **RAG (Retrieval-Augmented Generation)** that answers customer questions relying **exclusively** on the official content of [te.eg](https://te.eg) — no hallucination, no going outside the scope of the company's services.
 
-## نظرة عامة على الـ Pipeline
+## Pipeline Overview
 
 ```
 te.eg  ──scrape──▶  crawled_pages   ──chunk──▶  Chunked_Data   ──embed──▶  document_vectors
@@ -24,58 +24,58 @@ te.eg  ──scrape──▶  crawled_pages   ──chunk──▶  Chunked_Data
                                                                     Postgres checkpointing
                                                                     (chat_sessions/messages)
                                                                                ▼
-                                                                    واجهة شات (HTML/CSS/JS)
+                                                                    Chat interface (HTML/CSS/JS)
 ```
 
-## المراحل
+## Stages
 
-| الملف | الوظيفة |
+| File | Function |
 |---|---|
-| `scrape_te_eg.py` | بيعمل crawl لموقع te.eg (respecting `robots.txt`) ويحفظ الصفحات في جدول `crawled_pages` |
-| `chunking_data.py` | بيقسّم النصوص المكشوطة لـ chunks (`RecursiveCharacterTextSplitter`) ويحفظها في `Chunked_Data` |
-| `embed_data.py` | بيحوّل الـ chunks لـ embeddings بموديل `BAAI/bge-m3` ويحفظها في `document_vectors` (pgvector) |
-| `rag_chat/` | طبقة الـ retrieval + generation + الواجهة (تفاصيلها في [`rag_chat/README.md`](rag_chat/README.md)) |
+| `scrape_te_eg.py` | Crawls the te.eg website (respecting `robots.txt`) and saves the pages into the `crawled_pages` table |
+| `chunking_data.py` | Splits the scraped text into chunks (`RecursiveCharacterTextSplitter`) and saves them into `Chunked_Data` |
+| `embed_data.py` | Converts the chunks into embeddings using the `BAAI/bge-m3` model and saves them into `document_vectors` (pgvector) |
+| `rag_chat/` | Retrieval + generation + UI layer (details in [`rag_chat/README.md`](rag_chat/README.md)) |
 
-## المميزات الرئيسية
+## Key Features
 
-- **Hybrid Search**: دمج Dense (semantic, pgvector) + Sparse (lexical, Postgres full-text) بـ **Reciprocal Rank Fusion** — بيغطي حالات البحث بالمعنى وبالكلمة الحرفية مع بعض.
-- **Grounded generation**: الموديل (عن طريق Groq) بيجاوب من الـ context المسترجع بس، مع تعليمات صارمة ضد الهلوسة والخروج عن الموضوع.
-- **Topic guardrails**: طبقتين حماية — رفض قبل ما يوصل للموديل أصلاً لو مفيش محتوى مرتبط فعليًا (عتبة `MIN_DENSE_SCORE`)، وتعليمات صارمة في الـ system prompt تمنع الإجابة من المعرفة العامة أو الاستجابة لأي prompt injection.
-- **Checkpointing**: كل محادثة ورسائلها بتتحفظ في Postgres (`chat_sessions` / `chat_messages`)، مع إمكانية استرجاع أو حذف أي محادثة قديمة.
-- **واجهة شات**: RTL عربي/إنجليزي قابلة للتبديل، markdown rendering داخلي (من غير أي اعتماد على CDN خارجي)، وعرض مصادر كل إجابة.
+- **Hybrid Search**: Combines Dense (semantic, pgvector) + Sparse (lexical, Postgres full-text) search using **Reciprocal Rank Fusion** — covers both meaning-based and literal keyword search cases.
+- **Grounded generation**: The model (via Groq) answers only from the retrieved context, with strict instructions against hallucination and going off-topic.
+- **Topic guardrails**: Two protection layers — rejection before the query even reaches the model if there's no genuinely relevant content (via the `MIN_DENSE_SCORE` threshold), and strict system-prompt instructions that prevent answering from general knowledge or responding to any prompt injection.
+- **Checkpointing**: Every conversation and its messages are saved in Postgres (`chat_sessions` / `chat_messages`), with the ability to retrieve or delete any past conversation.
+- **Chat interface**: Toggleable Arabic/English RTL UI, self-contained markdown rendering (no reliance on any external CDN), and source display for every answer.
 
-## التقنيات المستخدمة
+## Tech Stack
 
 - **Backend**: Python, FastAPI, psycopg2
 - **DB**: PostgreSQL + [pgvector](https://github.com/pgvector/pgvector) extension
 - **Embeddings**: `BAAI/bge-m3` (sentence-transformers)
-- **LLM**: Groq API (نماذج مفتوحة زي `openai/gpt-oss-120b`)
-- **Frontend**: HTML / CSS / vanilla JS (بدون frameworks)
+- **LLM**: Groq API (open models such as `openai/gpt-oss-120b`)
+- **Frontend**: HTML / CSS / vanilla JS (no frameworks)
 
-## التشغيل السريع
+## Quick Start
 
 ```bash
-# 1) الـ pipeline (مرة واحدة، أو كل ما تحب تحدّث البيانات)
+# 1) The data pipeline (run once, or whenever you want to refresh the data)
 python scrape_te_eg.py
 python chunking_data.py
 python embed_data.py
 
-# 2) طبقة الشات
+# 2) The chat layer
 cd rag_chat
 python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env   # وعدّل بياناتك: DB + GROQ_API_KEY
+cp .env.example .env   # then edit your details: DB + GROQ_API_KEY
 
-python db.py            # مرة واحدة: فهرس sparse search + جداول checkpointing
+python db.py            # one-time: sparse search index + checkpointing tables
 uvicorn app:app --reload --port 8000
 ```
 
-بعدها افتح `http://localhost:8000`.
+Then open `http://localhost:8000`.
 
-تفاصيل أكتر عن طبقة الشات (البنية، الـ env variables، الجاردريلز) في [`rag_chat/README.md`](rag_chat/README.md).
+More details about the chat layer (architecture, env variables, guardrails) are in [`rag_chat/README.md`](rag_chat/README.md).
 
-## بنية المشروع
+## Project Structure
 
 ```
 .
@@ -97,10 +97,10 @@ uvicorn app:app --reload --port 8000
         └── script.js
 ```
 
-## ملاحظات
+## Notes
 
-- `.env` مش بيترفع على GitHub (متضاف في `.gitignore`) — كل حد بيشغّل المشروع لازم يعمل نسخته الخاصة من `.env.example`.
-- الموديل الافتراضي على Groq بيتغيّر بمرور الوقت (deprecations)، لو واجهت `model_not_found` راجع [Groq deprecations](https://console.groq.com/docs/deprecations) وحدّث `GROQ_MODEL` في `.env`.
+- `.env` is not pushed to GitHub (it's listed in `.gitignore`) — everyone running the project needs to make their own copy from `.env.example`.
+- The default Groq model changes over time (deprecations); if you run into `model_not_found`, check [Groq deprecations](https://console.groq.com/docs/deprecations) and update `GROQ_MODEL` in `.env`.
 
 ## License
 
