@@ -99,25 +99,118 @@ function renderInline(text) {
   return out;
 }
 
+// A markdown table row: leading/trailing pipes optional, cells separated by |.
+// Matches "| a | b |" and "a | b" but not a normal sentence with a stray "|".
+function isTableRow(line) {
+  return /^\|?.+\|.+\|?$/.test(line) && line.includes("|");
+}
+
+// The separator row under a table header, e.g. "|---|:---:|---|" or "---|---".
+function isTableSeparator(line) {
+  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line);
+}
+
+function splitTableRow(line) {
+  let cells = line.trim();
+  if (cells.startsWith("|")) cells = cells.slice(1);
+  if (cells.endsWith("|")) cells = cells.slice(0, -1);
+  return cells.split("|").map((c) => c.trim());
+}
+
+function renderTable(lines) {
+  // lines[0] = header row, lines[1] = separator row, rest = body rows
+  const headerCells = splitTableRow(lines[0]);
+  const bodyRows = lines.slice(2).map(splitTableRow);
+
+  const thead = `<thead><tr>${headerCells
+    .map((c) => `<th>${renderInline(c)}</th>`)
+    .join("")}</tr></thead>`;
+
+  const tbody = `<tbody>${bodyRows
+    .map((row) => `<tr>${row.map((c) => `<td>${renderInline(c)}</td>`).join("")}</tr>`)
+    .join("")}</tbody>`;
+
+  return `<div class="table-wrap"><table>${thead}${tbody}</table></div>`;
+}
+
 function renderMarkdownLite(text) {
   const blocks = text.trim().split(/\n\s*\n/);
   return blocks
     .map((block) => {
-      const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
-      if (!lines.length) return "";
+      const rawLines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (!rawLines.length) return "";
 
-      const isBullet = lines.every((l) => /^[-*]\s+/.test(l));
-      const isNumbered = lines.every((l) => /^\d+[.)]\s+/.test(l));
+      // A block can mix a heading line with a table/list below it (the LLM
+      // often emits "### Title" directly above a table with no blank line
+      // between them), so walk the block line-by-line instead of assuming
+      // the whole block is one type.
+      const html = [];
+      let i = 0;
+      while (i < rawLines.length) {
+        const line = rawLines[i];
 
-      if (isBullet) {
-        const items = lines.map((l) => `<li>${renderInline(l.replace(/^[-*]\s+/, ""))}</li>`).join("");
-        return `<ul>${items}</ul>`;
+        const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+        if (headingMatch) {
+          const level = Math.min(headingMatch[1].length, 6);
+          html.push(`<h${level}>${renderInline(headingMatch[2])}</h${level}>`);
+          i += 1;
+          continue;
+        }
+
+        if (
+          isTableRow(line) &&
+          i + 1 < rawLines.length &&
+          isTableSeparator(rawLines[i + 1])
+        ) {
+          const tableLines = [line, rawLines[i + 1]];
+          let j = i + 2;
+          while (j < rawLines.length && isTableRow(rawLines[j]) && !isTableSeparator(rawLines[j])) {
+            tableLines.push(rawLines[j]);
+            j += 1;
+          }
+          html.push(renderTable(tableLines));
+          i = j;
+          continue;
+        }
+
+        // Collect a run of consecutive bullet or numbered lines into one list.
+        if (/^[-*]\s+/.test(line)) {
+          const items = [];
+          while (i < rawLines.length && /^[-*]\s+/.test(rawLines[i])) {
+            items.push(`<li>${renderInline(rawLines[i].replace(/^[-*]\s+/, ""))}</li>`);
+            i += 1;
+          }
+          html.push(`<ul>${items.join("")}</ul>`);
+          continue;
+        }
+        if (/^\d+[.)]\s+/.test(line)) {
+          const items = [];
+          while (i < rawLines.length && /^\d+[.)]\s+/.test(rawLines[i])) {
+            items.push(`<li>${renderInline(rawLines[i].replace(/^\d+[.)]\s+/, ""))}</li>`);
+            i += 1;
+          }
+          html.push(`<ol>${items.join("")}</ol>`);
+          continue;
+        }
+
+        // Plain paragraph line(s): collect consecutive plain lines together.
+        const paraLines = [];
+        while (
+          i < rawLines.length &&
+          !/^(#{1,6})\s+/.test(rawLines[i]) &&
+          !/^[-*]\s+/.test(rawLines[i]) &&
+          !/^\d+[.)]\s+/.test(rawLines[i]) &&
+          !(isTableRow(rawLines[i]) && i + 1 < rawLines.length && isTableSeparator(rawLines[i + 1]))
+        ) {
+          paraLines.push(rawLines[i]);
+          i += 1;
+        }
+        if (paraLines.length) {
+          html.push(`<p>${paraLines.map(renderInline).join("<br>")}</p>`);
+        }
       }
-      if (isNumbered) {
-        const items = lines.map((l) => `<li>${renderInline(l.replace(/^\d+[.)]\s+/, ""))}</li>`).join("");
-        return `<ol>${items}</ol>`;
-      }
-      return `<p>${lines.map(renderInline).join("<br>")}</p>`;
+
+      return html.join("");
     })
     .join("");
 }
