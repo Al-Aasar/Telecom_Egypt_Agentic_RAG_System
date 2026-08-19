@@ -15,10 +15,13 @@
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 html, body {
   height: 100%;
+  min-height: 100dvh;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -34,10 +37,12 @@ body {
 .app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
-/* ---------- Sidebar ---------- */
 .sidebar {
   width: 280px;
   flex-shrink: 0;
@@ -178,7 +183,6 @@ body {
 }
 .lang-toggle:hover { color: var(--text); border-color: var(--purple-dim); }
 
-/* ---------- Chat pane ---------- */
 .chat-pane {
   flex: 1;
   display: flex;
@@ -279,7 +283,6 @@ body {
 }
 .msg.thinking { color: var(--text-faint); font-style: italic; }
 
-/* rendered markdown inside assistant bubbles */
 .msg.assistant p { margin: 0 0 10px; }
 .msg.assistant p:last-child { margin-bottom: 0; }
 .msg.assistant ul, .msg.assistant ol {
@@ -299,7 +302,6 @@ body {
 .msg.assistant a { color: var(--purple); text-decoration: underline; }
 .msg.assistant a:hover { color: var(--orange); }
 
-/* headings inside rendered markdown */
 .msg.assistant h1, .msg.assistant h2, .msg.assistant h3,
 .msg.assistant h4, .msg.assistant h5, .msg.assistant h6 {
   margin: 14px 0 8px;
@@ -313,7 +315,6 @@ body {
 .msg.assistant h3 { font-size: 1.05em; color: var(--orange); }
 .msg.assistant h4, .msg.assistant h5, .msg.assistant h6 { font-size: 1em; color: var(--purple); }
 
-/* tables inside rendered markdown */
 .msg.assistant .table-wrap {
   overflow-x: auto;
   margin: 10px 0;
@@ -324,10 +325,6 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.92em;
-  /* Numbers and mixed digit/currency content read naturally left-to-right
-     even inside an RTL page — this keeps column order and digit order from
-     flipping, which is what made the raw pipes/numbers look scrambled
-     before headings/tables were parsed at all. */
   direction: ltr;
   text-align: right;
 }
@@ -406,17 +403,14 @@ body {
 .composer button:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .composer button:disabled { opacity: .5; cursor: default; transform: none; }
 
-/* ---------- LTR mode ---------- */
 body.ltr { direction: ltr; }
 body.ltr .sidebar { border-inline-end: 1px solid var(--border); }
 
-/* ---------- Scrollbars ---------- */
 .messages::-webkit-scrollbar, .sessions-list::-webkit-scrollbar { width: 6px; }
 .messages::-webkit-scrollbar-thumb, .sessions-list::-webkit-scrollbar-thumb {
   background: var(--surface-2); border-radius: 3px;
 }
 
-/* ---------- Responsive ---------- */
 .sidebar-overlay {
   display: none;
 }
@@ -424,55 +418,73 @@ body.ltr .sidebar { border-inline-end: 1px solid var(--border); }
 @media (max-width: 820px) {
   .menu-toggle { display: flex; }
 
-  .sidebar { position: fixed; inset-inline-start: 0; top: 0; bottom: 0; z-index: 20;
-    transform: translateX(-100%); transition: transform .2s; }
-  body.ltr .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    max-width: 80vw;
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+    transition: transform 0.25s ease-in-out;
+  }
 
-  /* Tapping outside the open sidebar closes it. Sits under the sidebar
-     (z-index 20) but above the rest of the page. */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  body.ltr .sidebar {
+    left: 0;
+    right: auto;
+    transform: translateX(-100%);
+  }
+
+  body.ltr .sidebar.open {
+    transform: translateX(0);
+  }
+
   .sidebar-overlay {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
     z-index: 19;
     opacity: 0;
     pointer-events: none;
-    transition: opacity .2s;
+    transition: opacity 0.2s ease;
   }
+  
   .sidebar-overlay.visible {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .msg, .sources { max-width: 88%; }
-  .chat-header { padding: 16px; }
+  .msg, .sources { max-width: 90%; }
+  .chat-header { padding: 14px 16px; }
   .messages, .composer { padding-inline: 16px; }
 
   .msg.assistant table { font-size: 0.85em; }
   .msg.assistant th, .msg.assistant td { padding: 6px 8px; }
 }
 
-/* Small phones: tighten spacing and full-bleed message bubbles further */
 @media (max-width: 480px) {
   .chat-header { padding: 12px; gap: 10px; }
   .header-text h1 { font-size: 16px; }
   .header-text p { font-size: 11.5px; }
   .messages { padding: 16px 12px; gap: 14px; }
   .composer { padding: 12px 12px 16px; gap: 8px; }
-  .msg, .sources { max-width: 94%; }
+  .msg, .sources { max-width: 95%; }
   .composer button { width: 42px; height: 42px; }
   .msg.assistant h1 { font-size: 1.1em; }
   .msg.assistant h2 { font-size: 1.05em; }
 }
 
-/* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .brand-mark span { animation: none; }
 }
 
-/* ---------- Focus visibility ---------- */
 button:focus-visible, textarea:focus-visible, .session-item:focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 2px;
