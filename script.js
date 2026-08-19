@@ -36,6 +36,23 @@ const API_BASE_URL = "https://al-aasar-telecom-egypt-agentic-rag-system.hf.space
 let lang = "ar";
 let currentSessionId = null;
 
+// Each browser gets its own random id, generated once and kept in
+// localStorage, so the backend can scope chat history per-user instead of
+// showing everyone's saved conversations to everyone. This is device/
+// browser-level isolation, not a real login — clearing site data or
+// switching browsers starts a fresh, empty history.
+function getOrCreateUserId() {
+  const KEY = "te_rag_user_id";
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+const userId = getOrCreateUserId();
+const authHeaders = (extra = {}) => ({ "X-User-Id": userId, ...extra });
+
 const el = (id) => document.getElementById(id);
 const messagesEl = el("messages");
 const emptyState = el("emptyState");
@@ -280,7 +297,7 @@ async function sendMessage(text) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ message: text, session_id: currentSessionId }),
     });
     if (!res.ok) throw new Error("bad response");
@@ -339,7 +356,10 @@ el("newChatBtn").addEventListener("click", () => {
 async function deleteSession(id, itemEl) {
   if (!confirm(STRINGS[lang].deleteConfirm)) return;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
     if (!res.ok) throw new Error("delete failed");
     itemEl.remove();
     if (id === currentSessionId) clearChatView();
@@ -350,7 +370,7 @@ async function deleteSession(id, itemEl) {
 
 async function refreshSessions() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/sessions`);
+    const res = await fetch(`${API_BASE_URL}/api/sessions`, { headers: authHeaders() });
     const sessions = await res.json();
     sessionsList.innerHTML = "";
     sessions.forEach((s) => {
@@ -393,7 +413,7 @@ async function loadSession(id) {
   currentSessionId = id;
   localStorage.setItem("te_rag_session_id", id);
   closeSidebar();
-  const res = await fetch(`${API_BASE_URL}/api/sessions/${id}/messages`);
+  const res = await fetch(`${API_BASE_URL}/api/sessions/${id}/messages`, { headers: authHeaders() });
   const msgs = await res.json();
 
   messagesEl.innerHTML = "";
