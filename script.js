@@ -289,17 +289,34 @@ function addSources(sources) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+async function postChat(text, sessionId) {
+  return fetch(`${API_BASE_URL}/api/chat`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ message: text, session_id: sessionId }),
+  });
+}
+
 async function sendMessage(text) {
   addMessage("user", text);
   const thinkingEl = addMessage("assistant thinking", STRINGS[lang].thinking);
 
   sendBtn.disabled = true;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/chat`, {
-      method: "POST",
-      headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ message: text, session_id: currentSessionId }),
-    });
+    let res = await postChat(text, currentSessionId);
+
+    // A 404 here means currentSessionId doesn't belong to this browser's
+    // user id — most commonly a session_id saved in localStorage from
+    // before per-user isolation existed (see chat_memory.py's 'legacy'
+    // owner), or a session that was deleted from another tab. Either way,
+    // the fix is the same: drop the stale id and start a fresh session
+    // with the same message, instead of leaving the user stuck.
+    if (res.status === 404 && currentSessionId) {
+      currentSessionId = null;
+      localStorage.removeItem("te_rag_session_id");
+      res = await postChat(text, null);
+    }
+
     if (!res.ok) throw new Error("bad response");
     const data = await res.json();
 
